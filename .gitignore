@@ -1,0 +1,14 @@
+# project/build temp files
+*.build/
+*.pbxuser
+*.perspective
+*.perspectivev3
+*.mode1v3
+*.mode2v3
+*.xccheckout
+*.xcscmblueprint
+*.opensdf
+*.sdf
+*.lastcodeanalysissucceeded
+xcuserdata/
+**/build/UninstalledProducts/
