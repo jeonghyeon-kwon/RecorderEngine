@@ -10,10 +10,15 @@ import Foundation
 import ReplayKit
 
 final class ReplayManager {
-    private let recorder: Recorder
+    private let recorder = Recorder()
+    private let input1 = RecorderAudioInput(type: .audioInput)
+    private let input2 = RecorderAudioInput(type: .audioOutput)
+    private let video = RecorderVideoInput()
 
     init() {
-        
+        input1.recorder = recorder
+        input2.recorder = recorder
+        video.recorder = recorder
     }
 
     var isMicrophoneEnabled = true
@@ -23,6 +28,8 @@ final class ReplayManager {
 
         guard screenRecorder.isAvailable, !screenRecorder.isRecording else { return }
 
+        recorder.prepare()
+        
         screenRecorder.isMicrophoneEnabled = isMicrophoneEnabled
         screenRecorder.startCapture(handler: { [weak self] (sampleBuffer, type, error) in
             guard let self = self else { return }
@@ -34,11 +41,11 @@ final class ReplayManager {
 
             switch type {
             case .audioApp:
-                break
+                self.input2.process(sampleBuffer: sampleBuffer)
             case .audioMic:
-                break
+                self.input1.process(sampleBuffer: sampleBuffer)
             case .video:
-                break
+                self.video.process(sampleBuffer: sampleBuffer)
             }
         }, completionHandler: { [weak self] (error) in
             guard let self = self else { return }

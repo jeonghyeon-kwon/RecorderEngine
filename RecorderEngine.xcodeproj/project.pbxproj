@@ -46,7 +46,7 @@
 		54D9F3D9222F548200A555C8 = {
 			isa = PBXGroup;
 			children = (
-				54D9F3E4222F548200A555C8 /* Recorder */,
+				54D9F3E4222F548200A555C8 /* RecorderEngine */,
 				54D9F3E3222F548200A555C8 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,7 +59,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		54D9F3E4222F548200A555C8 /* Recorder */ = {
+		54D9F3E4222F548200A555C8 /* RecorderEngine */ = {
 			isa = PBXGroup;
 			children = (
 				54D9F3E5222F548200A555C8 /* AppDelegate.swift */,
@@ -70,7 +70,6 @@
 				54D9F3F1222F548500A555C8 /* Info.plist */,
 				54D9F41A222F57D900A555C8 /* Recording */,
 			);
-			name = Recorder;
 			path = RecorderEngine;
 			sourceTree = "<group>";
 		};
@@ -309,7 +308,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9QW52KK583;
-				INFOPLIST_FILE = Recorder/Info.plist;
+				INFOPLIST_FILE = RecorderEngine/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -328,7 +327,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9QW52KK583;
-				INFOPLIST_FILE = Recorder/Info.plist;
+				INFOPLIST_FILE = RecorderEngine/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

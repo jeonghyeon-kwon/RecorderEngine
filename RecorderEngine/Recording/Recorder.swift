@@ -44,8 +44,7 @@ final class Recorder {
     var videoURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("temp.mp4")
     private var state: State = .none
     private var trackTypes: TrackType = []
-    private var inputs = [RecorderInput]()
-    private var videoInput: RecorderVideoInput?
+    private var inputs: [RecorderInput] = []
 
     private var startFlag: Bool = false
     private var fileOutput = RecorderFileOutput()
@@ -75,11 +74,8 @@ final class Recorder {
             return
         }
 
-        if isRecordingAvailable {
-            startFlag = true
-        } else {
-            state = .started
-        }
+        state = .started
+        startFlag = true
     }
 
     private func startRecorder(firstFrameTime: CMTime) {
@@ -130,9 +126,40 @@ final class Recorder {
             UISaveVideoAtPathToSavedPhotosAlbum(self.videoURL.absoluteString, nil, nil, nil);
         }
     }
+}
 
+extension Recorder {
+    func canAdd(input: RecorderInput) -> Bool {
+        if trackTypes.contains(input.type) {
+            return false
+        }
+        return true
+    }
+
+    func add(input: RecorderInput) {
+        if canAdd(input: input) {
+            inputs.append(input)
+            trackTypes.insert(input.type)
+        } else {
+            assertionFailure()
+        }
+    }
+
+    func remove(inputType: TrackType) {
+        if trackTypes.contains(inputType) {
+            inputs = inputs.filter { $0.type != inputType }
+            trackTypes.remove(inputType)
+        }
+    }
+
+    func replace(input: RecorderInput) {
+        remove(inputType: input.type)
+        add(input: input)
+    }
+}
+
+extension Recorder {
     func append(audioBuffer: CMSampleBuffer, type: TrackType) {
-        //TODO: Audio check
         guard isRunning else { return }
 
         fileOutput.append(audioBuffer: audioBuffer, type: type)
@@ -149,40 +176,4 @@ final class Recorder {
         fileOutput.append(pixelBuffer: pixelBuffer, presentationTime: presentationTime)
     }
 
-    func canAdd(input: RecorderInput) -> Bool {
-        if trackTypes.contains(input.type) {
-            return false
-        }
-        return true
-    }
-
-    func add(input: RecorderInput) {
-        if canAdd(input: input) {
-            if input.type == .video,
-                let input = input as? RecorderVideoInput {
-                videoInput = input
-            }
-
-            inputs.append(input)
-            trackTypes.insert(input.type)
-        } else {
-            assertionFailure()
-        }
-    }
-
-    func remove(inputType: TrackType) {
-        if trackTypes.contains(inputType) {
-            if inputType == .video {
-                videoInput = nil
-            }
-
-            inputs = inputs.filter { $0.type != inputType }
-            trackTypes.remove(inputType)
-        }
-    }
-
-    func replace(input: RecorderInput) {
-        remove(inputType: input.type)
-        add(input: input)
-    }
 }

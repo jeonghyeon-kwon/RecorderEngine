@@ -10,5 +10,5 @@
 *.opensdf
 *.sdf
 *.lastcodeanalysissucceeded
-xcuserdata/
-**/build/UninstalledProducts/
+*/xcuserdata/
+*/build/UninstalledProducts/
