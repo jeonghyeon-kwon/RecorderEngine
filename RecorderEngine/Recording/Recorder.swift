@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import AVFoundation
+import Photos
 
 final class Recorder {
     struct TrackType: OptionSet {
@@ -41,7 +42,7 @@ final class Recorder {
     }
     
     var currentMediaTime: CMTime { return CMClockGetTime(CMClockGetHostTimeClock()) }
-    var videoURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("temp.mp4")
+    var videoURL = FileManager.default.temporaryDirectory.appendingPathComponent("asdfsadfsadf.mp4")
     private var state: State = .none
     private var trackTypes: TrackType = []
     private var inputs: [RecorderInput] = []
@@ -74,7 +75,6 @@ final class Recorder {
             return
         }
 
-        state = .started
         startFlag = true
     }
 
@@ -123,7 +123,14 @@ final class Recorder {
             guard let self = self else { return }
 
             self.state = .finished
-            UISaveVideoAtPathToSavedPhotosAlbum(self.videoURL.absoluteString, nil, nil, nil);
+
+            PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.videoURL)
+            }, completionHandler: { (success, error) in
+                if !success {
+                    print(error)
+                }
+            })
         }
     }
 }
