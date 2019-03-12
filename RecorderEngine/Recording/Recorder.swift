@@ -127,7 +127,7 @@ final class Recorder {
             PHPhotoLibrary.shared().performChanges({
                 PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: self.videoURL)
             }, completionHandler: { (success, error) in
-                if !success {
+                if !success, let error = error {
                     print(error)
                 }
             })

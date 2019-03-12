@@ -16,6 +16,10 @@ final class ReplayManager {
     private let video = RecorderVideoInput()
 
     init() {
+        recorder.add(input: input1)
+        recorder.add(input: input2)
+        recorder.add(input: video)
+
         input1.recorder = recorder
         input2.recorder = recorder
         video.recorder = recorder

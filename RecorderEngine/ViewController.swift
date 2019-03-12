@@ -31,8 +31,8 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        startButton.titleLabel?.text = "Start"
-        pauseButton.titleLabel?.text = "Pause"
+        startButton.setTitle("Start", for: .normal)
+        pauseButton.setTitle("Pause", for: .normal)
 
         manager = ReplayManager()
 
@@ -43,11 +43,11 @@ class ViewController: UIViewController {
         if startButton.isEqual(sender) {
             switch state {
             case .none:
-                startButton.titleLabel?.text = "Stop"
+                startButton.setTitle("Stop", for: .normal)
                 manager?.start()
                 state = .started
             case .started:
-                startButton.titleLabel?.text = "Start"
+                startButton.setTitle("Start", for: .normal)
                 manager?.stop()
                 state = .finieded
             default:
@@ -56,11 +56,11 @@ class ViewController: UIViewController {
         } else {
             switch state {
             case .started:
-                pauseButton.titleLabel?.text = "Resum"
+                pauseButton.setTitle("Resum", for: .normal)
                 manager?.pause()
                 state = .paused
             case .paused:
-                pauseButton.titleLabel?.text = "Pause"
+                pauseButton.setTitle("Pause", for: .normal)
                 manager?.resum()
                 state = .started
             default:
