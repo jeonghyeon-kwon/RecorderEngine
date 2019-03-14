@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import AVFoundation
 
 class ViewController: UIViewController {
     @IBOutlet private var startButton: UIButton!
@@ -37,6 +38,7 @@ class ViewController: UIViewController {
         manager = ReplayManager()
 
         prepareTimer()
+        preparePlayer()
     }
 
     @IBAction func touchButton(_ sender: Any) {
@@ -49,6 +51,7 @@ class ViewController: UIViewController {
             case .started:
                 startButton.setTitle("Start", for: .normal)
                 manager?.stop()
+                stop()
                 state = .finieded
             default:
                 break
@@ -79,6 +82,41 @@ class ViewController: UIViewController {
             let g = CGFloat.random(in: 0.0..<1.0)
             let b = CGFloat.random(in: 0.0..<1.0)
             self.colorView.backgroundColor = UIColor(red: r, green: g, blue: b, alpha: 1.0)
+        }
+    }
+
+    var player: AVAudioPlayer?
+
+    func preparePlayer() {
+        guard let url = Bundle.main.url(forResource: "Kamikaze", withExtension: "mp3") else {
+            return
+        }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            player = try AVAudioPlayer(contentsOf: url)
+
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+
+            player?.volume = 0.5
+            player?.play()
+        } catch {
+            print(error)
+            assertionFailure()
+        }
+    }
+
+    func stop() {
+        let session = AVAudioSession.sharedInstance()
+
+        player?.stop()
+
+        do {
+            try session.setActive(false)
+        } catch {
+            print(error)
+            assertionFailure()
         }
     }
 }

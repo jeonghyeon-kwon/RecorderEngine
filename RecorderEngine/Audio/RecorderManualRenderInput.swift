@@ -17,7 +17,6 @@ class RecorderManualRenderInput: RecorderPushInput {
     let engine = AVAudioEngine()
     let mic = AVAudioPlayerNode()
     let speaker = AVAudioPlayerNode()
-    let mixer = AVAudioMixerNode()
 
     let maximumFrameCount: AVAudioFrameCount = 1024
     let commonPCMFormat: AVAudioFormat
@@ -36,10 +35,8 @@ class RecorderManualRenderInput: RecorderPushInput {
     private func prepareEngine() {
         engine.attach(mic)
         engine.attach(speaker)
-        engine.attach(mixer)
 
-        engine.connect(engine.inputNode, to: mixer, format: nil)
-        engine.connect(mixer, to: engine.mainMixerNode, format: nil)
+        engine.connect(engine.inputNode, to: engine.mainMixerNode, fromBus: 0, toBus: 0, format: nil)
 
         engine.stop()
 
@@ -129,43 +126,39 @@ class RecorderManualRenderInput: RecorderPushInput {
         let sampleCount = CMTimeValue(CACurrentMediaTime() * commonPCMFormat.sampleRate)
         var cmFormat: CMAudioFormatDescription?
 
-        CMAudioFormatDescriptionCreate(
-            allocator: kCFAllocatorDefault,
-            asbd: commonPCMFormat.streamDescription,
-            layoutSize: 0,
-            layout: nil,
-            magicCookieSize: 0,
-            magicCookie: nil,
-            extensions: nil,
-            formatDescriptionOut: &cmFormat)
+        CMAudioFormatDescriptionCreate(allocator: kCFAllocatorDefault,
+                                       asbd: commonPCMFormat.streamDescription,
+                                       layoutSize: 0,
+                                       layout: nil,
+                                       magicCookieSize: 0,
+                                       magicCookie: nil,
+                                       extensions: nil,
+                                       formatDescriptionOut: &cmFormat)
 
         var sampleBuffer: CMSampleBuffer?
-        var timingInfo = CMSampleTimingInfo(
-            duration: CMTime(value: 1, timescale: sampleRate),
-            presentationTimeStamp: CMTime(value: sampleCount, timescale: sampleRate),
-            decodeTimeStamp: .invalid)
+        var timingInfo = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: sampleRate),
+                                            presentationTimeStamp: CMTime(value: sampleCount, timescale: sampleRate),
+                                            decodeTimeStamp: .invalid)
 
-        CMSampleBufferCreate(
-            allocator: kCFAllocatorDefault,
-            dataBuffer: nil,
-            dataReady: false,
-            makeDataReadyCallback: nil,
-            refcon: nil,
-            formatDescription: cmFormat,
-            sampleCount: CMItemCount(buffer.frameLength),
-            sampleTimingEntryCount: 1,
-            sampleTimingArray: &timingInfo,
-            sampleSizeEntryCount: 0,
-            sampleSizeArray: nil,
-            sampleBufferOut: &sampleBuffer)
+        CMSampleBufferCreate(allocator: kCFAllocatorDefault,
+                             dataBuffer: nil,
+                             dataReady: false,
+                             makeDataReadyCallback: nil,
+                             refcon: nil,
+                             formatDescription: cmFormat,
+                             sampleCount: CMItemCount(buffer.frameLength),
+                             sampleTimingEntryCount: 1,
+                             sampleTimingArray: &timingInfo,
+                             sampleSizeEntryCount: 0,
+                             sampleSizeArray: nil,
+                             sampleBufferOut: &sampleBuffer)
 
         if let sampleBuffer = sampleBuffer {
-            let status = CMSampleBufferSetDataBufferFromAudioBufferList(
-                sampleBuffer,
-                blockBufferAllocator: kCFAllocatorDefault,
-                blockBufferMemoryAllocator: kCFAllocatorDefault,
-                flags: kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
-                bufferList: buffer.audioBufferList)
+            let status = CMSampleBufferSetDataBufferFromAudioBufferList(sampleBuffer,
+                                                                        blockBufferAllocator: kCFAllocatorDefault,
+                                                                        blockBufferMemoryAllocator: kCFAllocatorDefault,
+                                                                        flags: kCMSampleBufferFlag_AudioBufferList_Assure16ByteAlignment,
+                                                                        bufferList: buffer.audioBufferList)
             if status != noErr {
                 assertionFailure()
             }
@@ -227,14 +220,14 @@ class RecorderManualRenderInput: RecorderPushInput {
             case .audioInput:
                 if !inputStarted {
                     inputStarted = true
-                    engine.connect(mic, to: mixer, fromBus: 0, toBus: 1, format: toFormat)
+                    engine.connect(mic, to: engine.mainMixerNode, fromBus: 0, toBus: 1, format: toFormat)
                     mic.play()
                 }
                 mic.scheduleBuffer(convertedBuffer, at: nil, options: [])
             case .audioOutput:
                 if !outputStarted {
                     outputStarted = true
-                    engine.connect(speaker, to: mixer, fromBus: 0, toBus: 2, format: toFormat)
+                    engine.connect(speaker, to: engine.mainMixerNode, fromBus: 0, toBus: 2, format: toFormat)
                     speaker.play()
                 }
                 speaker.scheduleBuffer(convertedBuffer, at: nil, options: [])
