@@ -68,7 +68,8 @@ final class Recorder {
     }
 
     func start() {
-        print("Recorder \(#function) state \(state)")
+        let current = currentMediaTime
+        print("Recorder \(#function) state \(state) time \(current.value / Int64(current.timescale))")
 
         guard state == .prepared else {
             assertionFailure()
@@ -76,7 +77,7 @@ final class Recorder {
         }
 
         inputs.forEach { $0.start() }
-        fileOutput.start(time: currentMediaTime)
+        fileOutput.start(time: current)
         state = .started
     }
 
@@ -101,14 +102,15 @@ final class Recorder {
     }
 
     func finish(_ completion: (() -> Void)? = nil) {
-        print("Recorder \(#function) state \(state)")
+        let current = currentMediaTime
+        print("Recorder \(#function) state \(state) time \(current.value / Int64(current.timescale))")
 
         guard state == .started else { return }
 
         state = .finishing
         inputs.forEach { $0.finish() }
 
-        fileOutput.finish(time: currentMediaTime) { [weak self] (success) in
+        fileOutput.finish(time: current) { [weak self] (success) in
             guard let self = self else { return }
 
             self.state = .finished

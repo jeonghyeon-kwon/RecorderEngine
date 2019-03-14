@@ -16,7 +16,7 @@ final class ReplayManager {
     private let video: RecorderPushInput
 
     init() {
-        if false {
+        if true {
             let audio = RecorderManualRenderInput()
             input = audio
             output = audio

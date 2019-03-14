@@ -94,7 +94,7 @@ class RecorderManualRenderInput: RecorderPushInput {
     var timer: DispatchSourceTimer?
 
     private func startTimer() {
-        queue = DispatchQueue(label: "Audio Manual Render Queue")
+        queue = DispatchQueue(label: "Audio Manual Rendering Queue")
         timer = DispatchSource.makeTimerSource(queue: queue)
 
         let fps = Double(maximumFrameCount) / commonPCMFormat.sampleRate
@@ -212,10 +212,13 @@ class RecorderManualRenderInput: RecorderPushInput {
             let convertedBuffer = AVAudioPCMBuffer(pcmFormat: toFormat, frameCapacity: AVAudioFrameCount(frames)) else { return }
 
         var error: NSError?
-        converter.convert(to: convertedBuffer, error: &error) { (packetCount, status) -> AVAudioBuffer? in return buffer }
+        let status = converter.convert(to: convertedBuffer, error: &error) { (packetCount, status) -> AVAudioBuffer? in
+            status.pointee = .haveData
+            return buffer
+        }
 
-        if let error = error {
-            print(error)
+        if status != .haveData {
+            print("Recorder Manual Rendering convert error")
             assertionFailure()
         }
 
