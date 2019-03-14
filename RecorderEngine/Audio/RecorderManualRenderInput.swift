@@ -81,6 +81,7 @@ class RecorderManualRenderInput: RecorderPushInput {
         do {
             try engine.start()
             startTimer()
+            sampleCount = CMTimeValue(CACurrentMediaTime() * commonPCMFormat.sampleRate)
         } catch {
             print(error)
             assertionFailure()
@@ -121,9 +122,10 @@ class RecorderManualRenderInput: RecorderPushInput {
         }
     }
 
+    var sampleCount: CMTimeValue = 0
+
     func convert(buffer: AVAudioPCMBuffer) {
         let sampleRate = CMTimeScale(commonPCMFormat.sampleRate)
-        let sampleCount = CMTimeValue(CACurrentMediaTime() * commonPCMFormat.sampleRate)
         var cmFormat: CMAudioFormatDescription?
 
         CMAudioFormatDescriptionCreate(allocator: kCFAllocatorDefault,
@@ -152,6 +154,8 @@ class RecorderManualRenderInput: RecorderPushInput {
                              sampleSizeEntryCount: 0,
                              sampleSizeArray: nil,
                              sampleBufferOut: &sampleBuffer)
+
+        sampleCount += CMTimeValue(buffer.frameLength)
 
         if let sampleBuffer = sampleBuffer {
             let status = CMSampleBufferSetDataBufferFromAudioBufferList(sampleBuffer,

@@ -16,27 +16,16 @@ final class ReplayManager {
     private let video: RecorderPushInput
 
     init() {
-        if true {
-            let audio = RecorderManualRenderInput()
-            input = audio
-            output = audio
-            video = RecorderVideoInput()
+        let audio = RecorderManualRenderInput()
+        input = audio
+        output = audio
+        video = RecorderVideoInput()
 
-            recorder.add(input: audio)
-        } else {
-            input = RecorderAudioInput(type: .audioInput)
-            output = RecorderAudioInput(type: .audioOutput)
-            video = RecorderVideoInput()
-
-            recorder.add(input: input)
-            recorder.add(input: output)
-        }
-
+        recorder.add(input: audio)
         recorder.add(input: video)
 
         video.recorder = recorder
-        input.recorder = recorder
-        output.recorder = recorder
+        audio.recorder = recorder
     }
 
     var isMicrophoneEnabled = true
