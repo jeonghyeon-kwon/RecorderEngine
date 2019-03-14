@@ -72,7 +72,7 @@ class ViewController: UIViewController {
     var timer: Timer?
 
     func prepareTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             guard let self = self else { return }
 
             let r = CGFloat.random(in: 0.0..<1.0)

@@ -33,11 +33,12 @@ final class RecorderFileOutput {
     class RecorderFileOutputInput {
         private let dispatchQueue: DispatchQueue
         private let dispatchGroup: DispatchGroup
-        private let inputType: Recorder.TrackType
         private var writerInput: AVAssetWriterInput?
         private var writerInputAdaptor: AVAssetWriterInputPixelBufferAdaptor?
         private var dataQueue = [RecorderData]()
         private weak var writer: AVAssetWriter?
+
+        let inputType: Recorder.TrackType
 
         init(queue: DispatchQueue, group: DispatchGroup, type: Recorder.TrackType) {
             dispatchQueue = queue
@@ -239,9 +240,7 @@ final class RecorderFileOutput {
     private var writer: AVAssetWriter?
     private var dispatchQueue: DispatchQueue?
     private var dispatchGroup: DispatchGroup?
-    private var audioInput: RecorderFileOutputInput?
-    private var audioOutput: RecorderFileOutputInput?
-    private var video: RecorderFileOutputInput?
+    private var inputs: [RecorderFileOutputInput] = []
 
     func prepare(trackTypes: Recorder.TrackType, videoURL: URL) {
         print(#function)
@@ -263,27 +262,11 @@ final class RecorderFileOutput {
             let dispatchGroup = dispatchGroup,
             let writer = writer {
 
-            if trackTypes.contains(.audioOutput) {
-                let input = RecorderFileOutputInput(queue: dispatchQueue, group: dispatchGroup, type: .audioOutput)
+            trackTypes.forEach {
+                let input = RecorderFileOutputInput(queue: dispatchQueue, group: dispatchGroup, type: $0)
 
                 if input.addInput(toWriter: writer) {
-                    audioOutput = input
-                }
-            }
-
-            if trackTypes.contains(.audioInput) {
-                let input = RecorderFileOutputInput(queue: dispatchQueue, group: dispatchGroup, type: .audioInput)
-
-                if input.addInput(toWriter: writer) {
-                    audioInput = input
-                }
-            }
-
-            if trackTypes.contains(.video) {
-                let input = RecorderFileOutputInput(queue: dispatchQueue, group: dispatchGroup, type: .video)
-
-                if input.addInput(toWriter: writer) {
-                    video = input
+                    inputs.append(input)
                 }
             }
 
@@ -309,9 +292,7 @@ final class RecorderFileOutput {
         dispatchGroup.notify(queue: dispatchQueue, execute: { [weak self] in
             guard let self = self else { return }
 
-            self.audioInput?.finish()
-            self.audioOutput?.finish()
-            self.video?.finish()
+            self.inputs.forEach { $0.finish() }
             self.writer?.endSession(atSourceTime: time)
             self.writer?.finishWriting {
                 let success: Bool
@@ -332,20 +313,14 @@ final class RecorderFileOutput {
         writer = nil
         dispatchQueue = nil
         dispatchGroup = nil
-        audioInput = nil
-        audioOutput = nil
-        video = nil
+        inputs.removeAll()
     }
 
     func append(audioBuffer: CMSampleBuffer, type: Recorder.TrackType) {
-        if type == .audioInput {
-            audioInput?.append(audioBuffer: audioBuffer)
-        } else {
-            audioOutput?.append(audioBuffer: audioBuffer)
-        }
+        inputs.first(where: { $0.inputType == type })?.append(audioBuffer: audioBuffer)
     }
 
     func append(pixelBuffer: CVPixelBuffer, presentationTime: CMTime) {
-        video?.append(pixelBuffer: pixelBuffer, presentationTime: presentationTime)
+        inputs.first(where: { $0.inputType == .video })?.append(pixelBuffer: pixelBuffer, presentationTime: presentationTime)
     }
 }

@@ -14,6 +14,7 @@ import Photos
 final class Recorder {
     struct TrackType: OptionSet {
         let rawValue: Int
+
         static let audioInput = TrackType(rawValue: 1 << 0)
         static let audioOutput = TrackType(rawValue: 1 << 1)
         static let video = TrackType(rawValue: 1 << 2)
@@ -45,9 +46,8 @@ final class Recorder {
     var videoURL = FileManager.default.temporaryDirectory.appendingPathComponent("asdfsadfsadf.mp4")
     private var state: State = .none
     private var trackTypes: TrackType = []
-    private var inputs: [RecorderInput] = []
 
-    private var startFlag: Bool = false
+    private var inputs: [RecorderInput] = []
     private var fileOutput = RecorderFileOutput()
 
     deinit {
@@ -75,19 +75,8 @@ final class Recorder {
             return
         }
 
-        startFlag = true
-    }
-
-    private func startRecorder(firstFrameTime: CMTime) {
-        print("Recorder \(#function) state \(state)")
-
-        guard state == .prepared else {
-            assertionFailure()
-            return
-        }
-
         inputs.forEach { $0.start() }
-        fileOutput.start(time: firstFrameTime)
+        fileOutput.start(time: currentMediaTime)
         state = .started
     }
 
@@ -173,11 +162,6 @@ extension Recorder {
     }
 
     func append(pixelBuffer: CVPixelBuffer, presentationTime: CMTime) {
-        if startFlag {
-            startRecorder(firstFrameTime: presentationTime)
-            startFlag = false
-        }
-
         guard isRunning else { return }
 
         fileOutput.append(pixelBuffer: pixelBuffer, presentationTime: presentationTime)

@@ -9,7 +9,7 @@
 import Foundation
 import AVFoundation
 
-protocol RecorderInput {
+protocol RecorderInput: AnyObject {
     var type: Recorder.TrackType { get }
     var recorder: Recorder? { get set }
 
@@ -18,7 +18,11 @@ protocol RecorderInput {
     func finish()
 }
 
-class RecorderAudioInput: RecorderInput {
+protocol RecorderPushInput: RecorderInput {
+    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType)
+}
+
+class RecorderAudioInput: RecorderPushInput {
     let type: Recorder.TrackType
     weak var recorder: Recorder?
 
@@ -30,12 +34,17 @@ class RecorderAudioInput: RecorderInput {
     func start() {}
     func finish() {}
 
-    func process(sampleBuffer: CMSampleBuffer) {
+    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
+        guard type == self.type else {
+            assertionFailure()
+            return
+        }
+
         recorder?.append(audioBuffer: sampleBuffer, type: type)
     }
 }
 
-class RecorderVideoInput: RecorderInput {
+class RecorderVideoInput: RecorderPushInput {
     let type: Recorder.TrackType = .video
     weak var recorder: Recorder?
 
@@ -43,7 +52,12 @@ class RecorderVideoInput: RecorderInput {
     func start() {}
     func finish() {}
 
-    func process(sampleBuffer: CMSampleBuffer) {
+    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
+        guard type == self.type else {
+            assertionFailure()
+            return
+        }
+
         if let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) {
             recorder?.append(pixelBuffer: pixelBuffer, presentationTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
         }

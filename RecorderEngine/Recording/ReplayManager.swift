@@ -11,18 +11,32 @@ import ReplayKit
 
 final class ReplayManager {
     private let recorder = Recorder()
-    private let input1 = RecorderAudioInput(type: .audioInput)
-    private let input2 = RecorderAudioInput(type: .audioOutput)
-    private let video = RecorderVideoInput()
+    private let input: RecorderPushInput
+    private let output: RecorderPushInput
+    private let video: RecorderPushInput
 
     init() {
-        recorder.add(input: input1)
-        recorder.add(input: input2)
+        if false {
+            let audio = RecorderManualRenderInput()
+            input = audio
+            output = audio
+            video = RecorderVideoInput()
+
+            recorder.add(input: audio)
+        } else {
+            input = RecorderAudioInput(type: .audioInput)
+            output = RecorderAudioInput(type: .audioOutput)
+            video = RecorderVideoInput()
+
+            recorder.add(input: input)
+            recorder.add(input: output)
+        }
+
         recorder.add(input: video)
 
-        input1.recorder = recorder
-        input2.recorder = recorder
         video.recorder = recorder
+        input.recorder = recorder
+        output.recorder = recorder
     }
 
     var isMicrophoneEnabled = true
@@ -45,11 +59,11 @@ final class ReplayManager {
 
             switch type {
             case .audioApp:
-                self.input2.process(sampleBuffer: sampleBuffer)
+                self.output.process(sampleBuffer: sampleBuffer, type: .audioOutput)
             case .audioMic:
-                self.input1.process(sampleBuffer: sampleBuffer)
+                self.input.process(sampleBuffer: sampleBuffer, type: .audioInput)
             case .video:
-                self.video.process(sampleBuffer: sampleBuffer)
+                self.video.process(sampleBuffer: sampleBuffer, type: .video)
             }
         }, completionHandler: { [weak self] (error) in
             guard let self = self else { return }
