@@ -80,28 +80,10 @@ class RecorderManualRenderInput: RecorderPushInput {
     func start() {
         do {
             try engine.start()
-            startTimer()
-            sampleCount = CMTimeValue(CACurrentMediaTime() * commonPCMFormat.sampleRate)
         } catch {
             print(error)
             assertionFailure()
         }
-    }
-
-    var queue: DispatchQueue?
-    var timer: DispatchSourceTimer?
-
-    private func startTimer() {
-        queue = DispatchQueue(label: "Audio Manual Rendering Queue")
-        timer = DispatchSource.makeTimerSource(queue: queue)
-
-        let fps = Double(maximumFrameCount) / commonPCMFormat.sampleRate
-        timer?.schedule(deadline: .now(), repeating: fps)
-        timer?.setEventHandler { [weak self] in
-            self?.render()
-        }
-
-        timer?.resume()
     }
 
     private func render() {
@@ -174,7 +156,6 @@ class RecorderManualRenderInput: RecorderPushInput {
     }
 
     func finish() {
-        timer?.cancel()
         engine.stop()
         engine.detach(mic)
         engine.detach(speaker)
@@ -219,25 +200,23 @@ class RecorderManualRenderInput: RecorderPushInput {
             assertionFailure()
         }
 
-        queue?.sync {
-            switch type {
-            case .audioInput:
-                if !inputStarted {
-                    inputStarted = true
-                    engine.connect(mic, to: engine.mainMixerNode, fromBus: 0, toBus: 1, format: toFormat)
-                    mic.play()
-                }
-                mic.scheduleBuffer(convertedBuffer, at: nil, options: [])
-            case .audioOutput:
-                if !outputStarted {
-                    outputStarted = true
-                    engine.connect(speaker, to: engine.mainMixerNode, fromBus: 0, toBus: 2, format: toFormat)
-                    speaker.play()
-                }
-                speaker.scheduleBuffer(convertedBuffer, at: nil, options: [])
-            default:
-                break
+        switch type {
+        case .audioInput:
+            if !inputStarted {
+                inputStarted = true
+                engine.connect(mic, to: engine.mainMixerNode, fromBus: 0, toBus: 1, format: toFormat)
+                mic.play()
             }
+            mic.scheduleBuffer(convertedBuffer, at: nil, options: [])
+        case .audioOutput:
+            if !outputStarted {
+                outputStarted = true
+                engine.connect(speaker, to: engine.mainMixerNode, fromBus: 0, toBus: 2, format: toFormat)
+                speaker.play()
+            }
+            speaker.scheduleBuffer(convertedBuffer, at: nil, options: [])
+        default:
+            break
         }
     }
 }
