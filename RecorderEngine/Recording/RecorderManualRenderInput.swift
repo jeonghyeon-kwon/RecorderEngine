@@ -106,7 +106,7 @@ class RecorderManualRenderInput: RecorderPushInput {
 
     var sampleCount: CMTimeValue = 0
 
-    func convert(buffer: AVAudioPCMBuffer) -> CMSampleBuffer? {
+    private func convert(buffer: AVAudioPCMBuffer) -> CMSampleBuffer? {
         let sampleRate = CMTimeScale(commonPCMFormat.sampleRate)
         var cmFormat: CMAudioFormatDescription?
 
@@ -161,13 +161,10 @@ class RecorderManualRenderInput: RecorderPushInput {
         engine.detach(speaker)
     }
 
-    var inputStarted = false
-    var outputStarted = false
-
-    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
+    func convert(sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
         guard let cmFormat = CMSampleBufferGetFormatDescription(sampleBuffer) else {
             assertionFailure()
-            return
+            return nil
         }
 
         let fromFormat = AVAudioFormat(cmAudioFormatDescription: cmFormat)
@@ -175,47 +172,60 @@ class RecorderManualRenderInput: RecorderPushInput {
 
         guard let buffer = AVAudioPCMBuffer(pcmFormat: fromFormat, frameCapacity: AVAudioFrameCount(frames)) else {
             assertionFailure()
-            return
+            return nil
         }
 
         buffer.frameLength = AVAudioFrameCount(frames)
 
         guard CMSampleBufferCopyPCMDataIntoAudioBufferList(sampleBuffer, at: 0, frameCount: Int32(frames), into: buffer.mutableAudioBufferList) == noErr else {
             assertionFailure()
-            return
+            return nil
         }
 
-
-        guard let toFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: fromFormat.sampleRate, channels: fromFormat.channelCount, interleaved: false),
-            let converter = AVAudioConverter(from: fromFormat, to: toFormat),
-            let convertedBuffer = AVAudioPCMBuffer(pcmFormat: toFormat, frameCapacity: AVAudioFrameCount(frames)) else { return }
-
-        var error: NSError?
-        let status = converter.convert(to: convertedBuffer, error: &error) { (packetCount, status) -> AVAudioBuffer? in
-            status.pointee = .haveData
+        guard buffer.format.commonFormat != .pcmFormatFloat32 else {
             return buffer
         }
 
-        if status != .haveData {
-            print("Recorder Manual Rendering convert error")
+        guard let toFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: fromFormat.sampleRate, channels: fromFormat.channelCount, interleaved: false),
+            let converter = AVAudioConverter(from: fromFormat, to: toFormat),
+            let convertedBuffer = AVAudioPCMBuffer(pcmFormat: toFormat, frameCapacity: AVAudioFrameCount(frames)) else {
+                return nil
+        }
+
+        if converter.convert(to: convertedBuffer, error: nil, withInputFrom: { (packetCount, status) -> AVAudioBuffer? in
+            status.pointee = .haveData
+            return buffer
+        }) != .haveData {
             assertionFailure()
+            return nil
+        }
+
+        return convertedBuffer
+    }
+
+    var inputStarted = false
+    var outputStarted = false
+
+    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
+        guard let buffer = convert(sampleBuffer: sampleBuffer) else {
+            return
         }
 
         switch type {
         case .audioInput:
             if !inputStarted {
                 inputStarted = true
-                engine.connect(mic, to: engine.mainMixerNode, fromBus: 0, toBus: 1, format: toFormat)
+                engine.connect(mic, to: engine.mainMixerNode, fromBus: 0, toBus: 1, format: buffer.format)
                 mic.play()
             }
-            mic.scheduleBuffer(convertedBuffer, at: nil, options: [])
+            mic.scheduleBuffer(buffer, at: nil, options: [])
         case .audioOutput:
             if !outputStarted {
                 outputStarted = true
-                engine.connect(speaker, to: engine.mainMixerNode, fromBus: 0, toBus: 2, format: toFormat)
+                engine.connect(speaker, to: engine.mainMixerNode, fromBus: 0, toBus: 2, format: buffer.format)
                 speaker.play()
             }
-            speaker.scheduleBuffer(convertedBuffer, at: nil, options: [])
+            speaker.scheduleBuffer(buffer, at: nil, options: [])
         default:
             break
         }

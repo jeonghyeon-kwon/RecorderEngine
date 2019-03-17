@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F8ED4CB223E35910092BA25 /* RecorderMixInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F8ED4CA223E35910092BA25 /* RecorderMixInput.swift */; };
 		54D8202E222F5FBE00D345F1 /* ReplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D8202D222F5FBE00D345F1 /* ReplayManager.swift */; };
 		54D8203A223787D500D345F1 /* RecorderManualRenderInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D82039223787D500D345F1 /* RecorderManualRenderInput.swift */; };
 		54D8204A2239E38200D345F1 /* Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D820492239E38200D345F1 /* Extension.swift */; };
@@ -22,6 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4F8ED4CA223E35910092BA25 /* RecorderMixInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecorderMixInput.swift; sourceTree = "<group>"; };
 		54D8202D222F5FBE00D345F1 /* ReplayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplayManager.swift; sourceTree = "<group>"; };
 		54D82039223787D500D345F1 /* RecorderManualRenderInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecorderManualRenderInput.swift; sourceTree = "<group>"; };
 		54D820492239E38200D345F1 /* Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extension.swift; sourceTree = "<group>"; };
@@ -100,11 +102,12 @@
 		54D9F41A222F57D900A555C8 /* Recording */ = {
 			isa = PBXGroup;
 			children = (
-				54D8202D222F5FBE00D345F1 /* ReplayManager.swift */,
 				54D9F414222F575000A555C8 /* Recorder.swift */,
 				54D9F416222F57B100A555C8 /* RecorderFileOutput.swift */,
 				54D9F41C222F5C0600A555C8 /* RecorderInput.swift */,
 				54D82039223787D500D345F1 /* RecorderManualRenderInput.swift */,
+				4F8ED4CA223E35910092BA25 /* RecorderMixInput.swift */,
+				54D8202D222F5FBE00D345F1 /* ReplayManager.swift */,
 			);
 			path = Recording;
 			sourceTree = "<group>";
@@ -189,6 +192,7 @@
 				54D9F417222F57B100A555C8 /* RecorderFileOutput.swift in Sources */,
 				54D9F3E6222F548200A555C8 /* AppDelegate.swift in Sources */,
 				54D8204A2239E38200D345F1 /* Extension.swift in Sources */,
+				4F8ED4CB223E35910092BA25 /* RecorderMixInput.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
