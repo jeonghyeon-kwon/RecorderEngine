@@ -49,14 +49,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		54D82038223787B300D345F1 /* Audio */ = {
-			isa = PBXGroup;
-			children = (
-				54D82039223787D500D345F1 /* RecorderManualRenderInput.swift */,
-			);
-			path = Audio;
-			sourceTree = "<group>";
-		};
 		54D8204B223A198100D345F1 /* Resource */ = {
 			isa = PBXGroup;
 			children = (
@@ -100,7 +92,6 @@
 				54D9F3F1222F548500A555C8 /* Info.plist */,
 				54D8204D223A19A700D345F1 /* Extension */,
 				54D8204B223A198100D345F1 /* Resource */,
-				54D82038223787B300D345F1 /* Audio */,
 				54D9F41A222F57D900A555C8 /* Recording */,
 			);
 			path = RecorderEngine;
@@ -113,6 +104,7 @@
 				54D9F414222F575000A555C8 /* Recorder.swift */,
 				54D9F416222F57B100A555C8 /* RecorderFileOutput.swift */,
 				54D9F41C222F5C0600A555C8 /* RecorderInput.swift */,
+				54D82039223787D500D345F1 /* RecorderManualRenderInput.swift */,
 			);
 			path = Recording;
 			sourceTree = "<group>";

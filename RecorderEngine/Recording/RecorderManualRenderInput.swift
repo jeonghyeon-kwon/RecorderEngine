@@ -18,7 +18,6 @@ class RecorderManualRenderInput: RecorderPushInput {
     let mic = AVAudioPlayerNode()
     let speaker = AVAudioPlayerNode()
 
-    let maximumFrameCount: AVAudioFrameCount = 1024
     let commonPCMFormat: AVAudioFormat
 
     init() {
@@ -31,14 +30,13 @@ class RecorderManualRenderInput: RecorderPushInput {
     }
 
     var renderBlock: AVAudioEngineManualRenderingBlock?
+    let maximumFrameCount: AVAudioFrameCount = 1024
 
     private func prepareEngine() {
         engine.attach(mic)
         engine.attach(speaker)
 
         engine.connect(engine.inputNode, to: engine.mainMixerNode, fromBus: 0, toBus: 0, format: nil)
-
-        engine.stop()
 
         do {
             try engine.enableManualRenderingMode(.realtime, format: commonPCMFormat, maximumFrameCount: maximumFrameCount)
@@ -97,7 +95,9 @@ class RecorderManualRenderInput: RecorderPushInput {
 
         switch status {
         case .success:
-            convert(buffer: buffer)
+            if let sampleBuffer = convert(buffer: buffer) {
+                recorder?.append(audioBuffer: sampleBuffer, type: type)
+            }
         default:
             print(outputError)
             break
@@ -106,7 +106,7 @@ class RecorderManualRenderInput: RecorderPushInput {
 
     var sampleCount: CMTimeValue = 0
 
-    func convert(buffer: AVAudioPCMBuffer) {
+    func convert(buffer: AVAudioPCMBuffer) -> CMSampleBuffer? {
         let sampleRate = CMTimeScale(commonPCMFormat.sampleRate)
         var cmFormat: CMAudioFormatDescription?
 
@@ -150,9 +150,9 @@ class RecorderManualRenderInput: RecorderPushInput {
             }
 
             CMSampleBufferSetDataReady(sampleBuffer)
-
-            recorder?.append(audioBuffer: sampleBuffer, type: type)
         }
+
+        return sampleBuffer
     }
 
     func finish() {
@@ -184,6 +184,7 @@ class RecorderManualRenderInput: RecorderPushInput {
             assertionFailure()
             return
         }
+
 
         guard let toFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: fromFormat.sampleRate, channels: fromFormat.channelCount, interleaved: false),
             let converter = AVAudioConverter(from: fromFormat, to: toFormat),
