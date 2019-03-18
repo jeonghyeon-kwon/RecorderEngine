@@ -9,7 +9,7 @@
 import Foundation
 import AVFoundation
 
-private class RecorderMixInput: RecorderPushInput {
+class RecorderMixInput: RecorderPushInput {
     private let queue = DispatchQueue(label: "MixAudioEngine.Queue")
     private let audioEngine = AVAudioEngine()
     private let inputPlayer = AVAudioPlayerNode()
@@ -38,7 +38,7 @@ private class RecorderMixInput: RecorderPushInput {
         audioEngine.attach(mixer)
 
         audioEngine.connect(mixer, to: audioEngine.mainMixerNode, fromBus: 0, toBus: 0, format: nil)
-        audioEngine.mainMixerNode.outputVolume = 0.00001
+        audioEngine.mainMixerNode.outputVolume = 0
 
         let format = mixer.outputFormat(forBus: 0)
         let sampleRate = CMTimeScale(format.sampleRate)
@@ -121,24 +121,51 @@ private class RecorderMixInput: RecorderPushInput {
         print("[MixAudioEngine.finish] engine stopped")
     }
 
-    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
+    func convert(sampleBuffer: CMSampleBuffer) -> AVAudioPCMBuffer? {
         guard let cmFormat = CMSampleBufferGetFormatDescription(sampleBuffer) else {
             assertionFailure()
-            return
+            return nil
         }
 
-        let format = AVAudioFormat(cmAudioFormatDescription: cmFormat)
+        let fromFormat = AVAudioFormat(cmAudioFormatDescription: cmFormat)
         let frames = CMSampleBufferGetNumSamples(sampleBuffer)
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)) else {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: fromFormat, frameCapacity: AVAudioFrameCount(frames)) else {
             assertionFailure()
-            return
+            return nil
         }
 
         buffer.frameLength = AVAudioFrameCount(frames)
 
         guard CMSampleBufferCopyPCMDataIntoAudioBufferList(sampleBuffer, at: 0, frameCount: Int32(frames), into: buffer.mutableAudioBufferList) == noErr else {
             assertionFailure()
+            return nil
+        }
+
+        guard buffer.format.commonFormat != .pcmFormatFloat32 else {
+            return buffer
+        }
+
+        guard let toFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: fromFormat.sampleRate, channels: fromFormat.channelCount, interleaved: false),
+            let converter = AVAudioConverter(from: fromFormat, to: toFormat),
+            let convertedBuffer = AVAudioPCMBuffer(pcmFormat: toFormat, frameCapacity: AVAudioFrameCount(frames)) else {
+                return nil
+        }
+
+        if converter.convert(to: convertedBuffer, error: nil, withInputFrom: { (packetCount, status) -> AVAudioBuffer? in
+            status.pointee = .haveData
+            return buffer
+        }) != .haveData {
+            assertionFailure()
+            return nil
+        }
+
+        return convertedBuffer
+    }
+
+
+    func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
+        guard let buffer = convert(sampleBuffer: sampleBuffer) else {
             return
         }
 
@@ -148,14 +175,14 @@ private class RecorderMixInput: RecorderPushInput {
             switch type {
             case .audioInput:
                 if !inputStarted {
-                    audioEngine.connect(inputPlayer, to: mixer, fromBus: 0, toBus: 1, format: format)
+                    audioEngine.connect(inputPlayer, to: mixer, fromBus: 0, toBus: 1, format: buffer.format)
                     inputPlayer.play()
                     inputStarted = true
                 }
                 inputPlayer.scheduleBuffer(buffer, at: nil, options: [])
             case .audioOutput:
                 if !outputStarted {
-                    audioEngine.connect(outputPlayer, to: mixer, fromBus: 0, toBus: 0, format: format)
+                    audioEngine.connect(outputPlayer, to: mixer, fromBus: 0, toBus: 0, format: buffer.format)
                     outputPlayer.play()
                     outputStarted = true
                 }

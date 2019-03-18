@@ -190,9 +190,9 @@ class RecorderManualRenderInput: RecorderPushInput {
         }
 
         let fromFormat = AVAudioFormat(cmAudioFormatDescription: cmFormat)
-        let frames = CMSampleBufferGetNumSamples(sampleBuffer)
+        let frames = AVAudioFrameCount(CMSampleBufferGetNumSamples(sampleBuffer))
 
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: fromFormat, frameCapacity: AVAudioFrameCount(frames)) else {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: fromFormat, frameCapacity: frames) else {
             assertionFailure()
             return nil
         }
@@ -210,7 +210,7 @@ class RecorderManualRenderInput: RecorderPushInput {
 
         guard let toFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: fromFormat.sampleRate, channels: fromFormat.channelCount, interleaved: false),
             let converter = AVAudioConverter(from: fromFormat, to: toFormat),
-            let convertedBuffer = AVAudioPCMBuffer(pcmFormat: toFormat, frameCapacity: AVAudioFrameCount(frames)) else {
+            let convertedBuffer = AVAudioPCMBuffer(pcmFormat: toFormat, frameCapacity: frames) else {
                 return nil
         }
 
