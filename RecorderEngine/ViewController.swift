@@ -96,7 +96,7 @@ class ViewController: UIViewController {
             let session = AVAudioSession.sharedInstance()
             player = try AVAudioPlayer(contentsOf: url)
 
-            try session.setCategory(.ambient, mode: .default)
+            try session.setCategory(.playback, mode: .default)
             try session.setActive(true)
 
             player?.play()

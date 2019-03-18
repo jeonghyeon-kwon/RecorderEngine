@@ -18,19 +18,34 @@ class RecorderManualRenderInput: RecorderPushInput {
     let mic = AVAudioPlayerNode()
     let speaker = AVAudioPlayerNode()
 
+    var renderQueue: DispatchQueue?
+
+    var renderBlock: AVAudioEngineManualRenderingBlock?
     let commonPCMFormat: AVAudioFormat
+
+    var inputNodeFrameCount: AVAudioFrameCount = 0
+    var inputNodeBuffer: AVAudioPCMBuffer?
+
+    var inputStarted = false
+    var outputStarted = false
+
+    let maximumFrameCount: AVAudioFrameCount = 1024
+    var startSampleCount: CMTimeValue = 0
+
+    var renderedFrameCount: AVAudioFrameCount = 0
+    var inputFrameCount: AVAudioFrameCount = 0
+    var outputFrameCount: AVAudioFrameCount = 0
 
     init() {
         commonPCMFormat = engine.mainMixerNode.outputFormat(forBus: 0)
     }
 
     func prepare() {
+        renderQueue = DispatchQueue(label: "Manual Rendering Queue")
+
         prepareEngine()
         prepareInputNode()
     }
-
-    var renderBlock: AVAudioEngineManualRenderingBlock?
-    let maximumFrameCount: AVAudioFrameCount = 1024
 
     private func prepareEngine() {
         engine.attach(mic)
@@ -47,9 +62,6 @@ class RecorderManualRenderInput: RecorderPushInput {
 
         renderBlock = engine.manualRenderingBlock
     }
-
-    var inputNodeFrameCount: AVAudioFrameCount = 0
-    var inputNodeBuffer: AVAudioPCMBuffer?
 
     private func prepareInputNode() {
         if !engine.inputNode.setManualRenderingInputPCMFormat(commonPCMFormat) { [weak self] (frameCount) -> UnsafePointer<AudioBufferList>? in
@@ -78,6 +90,7 @@ class RecorderManualRenderInput: RecorderPushInput {
     func start() {
         do {
             try engine.start()
+            startSampleCount = CMTimeValue(CACurrentMediaTime() * commonPCMFormat.sampleRate)
         } catch {
             print(error)
             assertionFailure()
@@ -85,6 +98,16 @@ class RecorderManualRenderInput: RecorderPushInput {
     }
 
     private func render() {
+        renderQueue?.sync {
+            let count = (min(inputFrameCount, outputFrameCount) - renderedFrameCount) / maximumFrameCount
+
+            for _ in 0..<count {
+                renderFrame()
+            }
+        }
+    }
+
+    private func renderFrame() {
         guard let renderBlock = renderBlock,
             let buffer = AVAudioPCMBuffer(pcmFormat: commonPCMFormat, frameCapacity: maximumFrameCount) else { return }
 
@@ -104,11 +127,12 @@ class RecorderManualRenderInput: RecorderPushInput {
         }
     }
 
-    var sampleCount: CMTimeValue = 0
-
     private func convert(buffer: AVAudioPCMBuffer) -> CMSampleBuffer? {
         let sampleRate = CMTimeScale(commonPCMFormat.sampleRate)
         var cmFormat: CMAudioFormatDescription?
+        let presentationTime = startSampleCount + CMTimeValue(renderedFrameCount)
+
+        renderedFrameCount += buffer.frameLength
 
         CMAudioFormatDescriptionCreate(allocator: kCFAllocatorDefault,
                                        asbd: commonPCMFormat.streamDescription,
@@ -121,7 +145,7 @@ class RecorderManualRenderInput: RecorderPushInput {
 
         var sampleBuffer: CMSampleBuffer?
         var timingInfo = CMSampleTimingInfo(duration: CMTime(value: 1, timescale: sampleRate),
-                                            presentationTimeStamp: CMTime(value: sampleCount, timescale: sampleRate),
+                                            presentationTimeStamp: CMTime(value: presentationTime, timescale: sampleRate),
                                             decodeTimeStamp: .invalid)
 
         CMSampleBufferCreate(allocator: kCFAllocatorDefault,
@@ -136,8 +160,6 @@ class RecorderManualRenderInput: RecorderPushInput {
                              sampleSizeEntryCount: 0,
                              sampleSizeArray: nil,
                              sampleBufferOut: &sampleBuffer)
-
-        sampleCount += CMTimeValue(buffer.frameLength)
 
         if let sampleBuffer = sampleBuffer {
             let status = CMSampleBufferSetDataBufferFromAudioBufferList(sampleBuffer,
@@ -203,9 +225,6 @@ class RecorderManualRenderInput: RecorderPushInput {
         return convertedBuffer
     }
 
-    var inputStarted = false
-    var outputStarted = false
-
     func process(sampleBuffer: CMSampleBuffer, type: Recorder.TrackType) {
         guard let buffer = convert(sampleBuffer: sampleBuffer) else {
             return
@@ -218,6 +237,8 @@ class RecorderManualRenderInput: RecorderPushInput {
                 engine.connect(mic, to: engine.mainMixerNode, fromBus: 0, toBus: 1, format: buffer.format)
                 mic.play()
             }
+
+            inputFrameCount += buffer.frameLength
             mic.scheduleBuffer(buffer, at: nil, options: [])
         case .audioOutput:
             if !outputStarted {
@@ -225,10 +246,14 @@ class RecorderManualRenderInput: RecorderPushInput {
                 engine.connect(speaker, to: engine.mainMixerNode, fromBus: 0, toBus: 2, format: buffer.format)
                 speaker.play()
             }
+
+            outputFrameCount += buffer.frameLength
             speaker.scheduleBuffer(buffer, at: nil, options: [])
         default:
             break
         }
+
+        render()
     }
 }
 
